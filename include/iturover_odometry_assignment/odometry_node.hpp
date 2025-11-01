@@ -23,9 +23,11 @@ private:
 
     KalmanFilter kf_; 
 
+	//Bızım cıhazın ebatlar
     const double WHEEL_RADIUS = 0.135;
     const double WHEEL_SEPARATION = 0.89;
 
+	//Thread sıkıntısı cıkmasın diye volatile
     volatile double current_left_rpm_ = 0.0;
     volatile double current_right_rpm_ = 0.0;
     volatile double imu_angular_vel_z_ = 0.0;
@@ -35,12 +37,15 @@ private:
     bool is_initialized_ = false;
     const double UPDATE_FREQUENCY = 50.0;
 
+	//Topic callback fonksiyonları, amaçları hızlıca veriyi almak
     void leftWheelsCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
     void rightWheelsCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
     void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
 
+	//Kalman filtresini güncelleme fonksiyonu
     void updateFuser(); 
 
+	//Odometry mesajını yayınlama fonksiyonu
     void publishOdometry(const Eigen::Vector3d &state, double linear_vel, double angular_vel, const ros::Time &time);
 };
 

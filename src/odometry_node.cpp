@@ -18,10 +18,12 @@ OdometryFuser::OdometryFuser(ros::NodeHandle &nh) : nh_(nh) {
 }
 
 void OdometryFuser::leftWheelsCallback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
+    //İki sol tekerin ortalaması
     current_left_rpm_ = (msg->data[0] + msg->data[1]) / 2.0;
 }
 
 void OdometryFuser::rightWheelsCallback(const std_msgs::Float64MultiArray::ConstPtr &msg) {
+    //İki sağ tekerin ortalaması
 	current_right_rpm_ = (msg->data[0] + msg->data[1]) / 2.0;
 }
 
@@ -44,21 +46,28 @@ void OdometryFuser::updateFuser() {
     }
     double dt = (current_time - last_time_).toSec();
     if (dt == 0.0) return;
+
+    //Teker hızlarını lineer ve açısal hıza çevirme
     double left_vel = (current_left_rpm_ * 2.0 * M_PI / 60.0) * WHEEL_RADIUS;
     double right_vel = (current_right_rpm_ * 2.0 * M_PI / 60.0) * WHEEL_RADIUS;
     double linear_vel = (right_vel + left_vel) / 2.0;
     double angular_vel = (right_vel - left_vel) / WHEEL_SEPARATION;
+
+    //Kalman filtresini güncelleme
     kf_.predict(linear_vel, angular_vel, dt);
     Eigen::VectorXd Z(2);
     Z(0) = imu_yaw_;
     Z(1) = imu_angular_vel_z_;
     kf_.update(Z);
     Eigen::Vector3d state = kf_.getState();
+
+    //Odometry mesajını yayınlama
     publishOdometry(state, linear_vel, angular_vel, current_time);
     last_time_ = current_time;
 }
 
 void OdometryFuser::run() {
+    //Rate 50 belirlemistim hpp dosyasında
     ros::Rate rate(UPDATE_FREQUENCY);
     while (ros::ok())
 	{
@@ -69,6 +78,7 @@ void OdometryFuser::run() {
 }
 
 void OdometryFuser::publishOdometry(const Eigen::Vector3d& state, double linear_vel, double angular_vel, const ros::Time& time) {
+    //TF ve Odometry mesajlarını oluşturma ve yayınlama
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(state(2));
     geometry_msgs::TransformStamped odom_trans;
     odom_trans.header.stamp = time;

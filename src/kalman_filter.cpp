@@ -1,6 +1,7 @@
 #include "iturover_odometry_assignment/kalman_filter.hpp"
 
 KalmanFilter::KalmanFilter() {
+    //Başlangıç değerleri
     X_.setZero();
     P_ = Eigen::Matrix3d::Identity() * 0.1;
     Q_ = Eigen::Matrix3d::Identity();
@@ -12,11 +13,13 @@ KalmanFilter::KalmanFilter() {
     H_(0, 2) = 1.0;
     R_.resize(2, 2);
     R_.setZero();
+    //IMU hatası düşük olduğu için küçük değerler atadım
     R_(0, 0) = 0.0001;
     R_(1, 1) = 0.0001;
 }
 
 void KalmanFilter::predict(double v, double omega, double dt) {
+    //Durum tahmini
     double theta = X_(2);
     double dx, dy;
 
@@ -39,6 +42,7 @@ void KalmanFilter::predict(double v, double omega, double dt) {
 }
 
 void KalmanFilter::update(const Eigen::VectorXd& Z) {
+    //IMU ölçümü ile güncelleme
     Eigen::MatrixXd S = H_ * P_ * H_.transpose() + R_;
     Eigen::MatrixXd K = P_ * H_.transpose() * S.inverse();
     Eigen::VectorXd Y_pred(2);
